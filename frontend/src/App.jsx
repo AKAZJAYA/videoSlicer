@@ -10,6 +10,13 @@ function App() {
   const [captions, setCaptions] = useState(null)
   const [captionLoading, setCaptionLoading] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState(null)
+  const [captionStyle, setCaptionStyle] = useState({
+    fontSize: 24,
+    color: '#ffffff',
+    outline: 2,
+    shadow: 0,
+    position: 'bottom'
+  });
 
   const durations = [
     { label: '15-30s', value: '15-30s' },
@@ -83,6 +90,10 @@ function App() {
     setCaptions(newCaptions);
   }
 
+  const handleStyleChange = (key, value) => {
+    setCaptionStyle(prev => ({ ...prev, [key]: value }));
+  }
+
   const handleBurnCaptions = async () => {
     if (!captions || !selectedVideo) return;
     
@@ -93,7 +104,7 @@ function App() {
       const response = await fetch("http://localhost:8001/api/burn-captions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ video_url: selectedVideo, captions })
+        body: JSON.stringify({ video_url: selectedVideo, captions, caption_style: captionStyle })
       });
       const data = await response.json();
       if (data.status === 'success') {
@@ -240,6 +251,67 @@ function App() {
                     </div>
                   ))}
                 </div>
+                <div style={{marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)'}}>
+                  <h4 style={{marginBottom: '1rem', color: 'var(--primary)'}}>🎨 Caption Styling</h4>
+                  <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
+                    <div className="input-group" style={{flex: 1, minWidth: '150px'}}>
+                      <label style={{fontSize: '0.85rem'}}>Font Size</label>
+                      <input 
+                        type="number" 
+                        className="url-input" 
+                        value={captionStyle.fontSize} 
+                        onChange={(e) => handleStyleChange('fontSize', parseInt(e.target.value))} 
+                        min="10" max="60"
+                        style={{padding: '0.5rem'}}
+                      />
+                    </div>
+                    <div className="input-group" style={{flex: 1, minWidth: '100px'}}>
+                      <label style={{fontSize: '0.85rem'}}>Text Color</label>
+                      <input 
+                        type="color" 
+                        className="url-input" 
+                        value={captionStyle.color} 
+                        onChange={(e) => handleStyleChange('color', e.target.value)} 
+                        style={{height: '42px', padding: '0 5px'}}
+                      />
+                    </div>
+                    <div className="input-group" style={{flex: 1, minWidth: '150px'}}>
+                      <label style={{fontSize: '0.85rem'}}>Outline Thickness</label>
+                      <input 
+                        type="number" 
+                        className="url-input" 
+                        value={captionStyle.outline} 
+                        onChange={(e) => handleStyleChange('outline', parseInt(e.target.value))} 
+                        min="0" max="10"
+                        style={{padding: '0.5rem'}}
+                      />
+                    </div>
+                    <div className="input-group" style={{flex: 1, minWidth: '150px'}}>
+                      <label style={{fontSize: '0.85rem'}}>Shadow Depth</label>
+                      <input 
+                        type="number" 
+                        className="url-input" 
+                        value={captionStyle.shadow} 
+                        onChange={(e) => handleStyleChange('shadow', parseInt(e.target.value))} 
+                        min="0" max="10"
+                        style={{padding: '0.5rem'}}
+                      />
+                    </div>
+                    <div className="input-group" style={{flex: 1, minWidth: '150px'}}>
+                      <label style={{fontSize: '0.85rem'}}>Position</label>
+                      <select 
+                        className="url-input" 
+                        value={captionStyle.position} 
+                        onChange={(e) => handleStyleChange('position', e.target.value)}
+                        style={{padding: '0.5rem'}}
+                      >
+                        <option value="bottom">Bottom Center</option>
+                        <option value="center">Middle Center</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 <button 
                   className="action-btn" 
                   style={{marginTop: '1.5rem', background: 'linear-gradient(135deg, #10b981, #3b82f6)'}}

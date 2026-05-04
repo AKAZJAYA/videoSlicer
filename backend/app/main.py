@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional, Dict
 import os
 from fastapi.staticfiles import StaticFiles
 from app.slicer import process_video_async
@@ -32,6 +33,7 @@ class TranscribeRequest(BaseModel):
 class BurnCaptionsRequest(BaseModel):
     video_url: str
     captions: list
+    caption_style: Optional[Dict] = None
 
 @app.get("/")
 def read_root():
@@ -83,7 +85,7 @@ async def burn_captions(request: BurnCaptionsRequest):
         if not os.path.exists(filepath):
             return {"status": "error", "message": "Video file not found on server"}
             
-        new_filename = await burn_captions_async(filepath, request.captions, STATIC_DIR)
+        new_filename = await burn_captions_async(filepath, request.captions, request.caption_style, STATIC_DIR)
         
         return {
             "status": "success",
