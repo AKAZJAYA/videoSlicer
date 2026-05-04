@@ -7,6 +7,9 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [videoUrls, setVideoUrls] = useState([])
   const [sliceCount, setSliceCount] = useState(1)
+  const [captions, setCaptions] = useState(null)
+  const [captionLoading, setCaptionLoading] = useState(false)
+  const [selectedVideo, setSelectedVideo] = useState(null)
 
   const durations = [
     { label: '15-30s', value: '15-30s' },
@@ -45,6 +48,71 @@ function App() {
       setStatus("Error connecting to the backend. Is it running?");
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleAddCaptions = async (vUrl) => {
+    setSelectedVideo(vUrl);
+    setCaptionLoading(true);
+    setCaptions(null);
+    setStatus("Transcribing video... This takes a few seconds.");
+
+    try {
+      const response = await fetch("http://localhost:8001/api/transcribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ video_url: vUrl })
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        setCaptions(data.segments);
+        setStatus("Transcription complete! You can now edit the captions.");
+      } else {
+        setStatus("Error: " + data.message);
+      }
+    } catch (err) {
+      setStatus("Error connecting to backend for transcription.");
+    } finally {
+      setCaptionLoading(false);
+    }
+  }
+
+  const handleCaptionChange = (index, newText) => {
+    const newCaptions = [...captions];
+    newCaptions[index].text = newText;
+    setCaptions(newCaptions);
+  }
+
+  const handleBurnCaptions = async () => {
+    if (!captions || !selectedVideo) return;
+    
+    setCaptionLoading(true);
+    setStatus("Burning captions into video... This might take a few moments.");
+
+    try {
+      const response = await fetch("http://localhost:8001/api/burn-captions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ video_url: selectedVideo, captions })
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        setStatus("Captions burned successfully!");
+        
+        // Replace the old video with the new one
+        const updatedUrls = videoUrls.map(url => url === selectedVideo ? data.video_url : url);
+        setVideoUrls(updatedUrls);
+        
+        // Select the new video and clear captions editor
+        setSelectedVideo(data.video_url);
+        setCaptions(null);
+      } else {
+        setStatus("Error: " + data.message);
+      }
+    } catch (err) {
+      setStatus("Error connecting to backend to burn captions.");
+    } finally {
+      setCaptionLoading(false);
     }
   }
 
@@ -124,20 +192,62 @@ function App() {
                 <h3 style={{textAlign: 'center', marginBottom: '1rem'}}>Your Slices are Ready!</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                   {videoUrls.map((vUrl, index) => (
-                    <div key={index} style={{textAlign: 'center'}}>
+                    <div key={index} style={{textAlign: 'center', background: selectedVideo === vUrl ? 'rgba(99, 102, 241, 0.2)' : 'transparent', padding: '1rem', borderRadius: '12px'}}>
                       <video 
                         src={vUrl} 
                         controls 
                         style={{
                           width: '100%', 
                           borderRadius: '12px', 
-                          border: '1px solid rgba(255,255,255,0.1)'
+                          border: selectedVideo === vUrl ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)'
                         }} 
                       />
                       <p style={{marginTop: '0.5rem', color: 'var(--text-muted)'}}>Slice #{index + 1}</p>
+                      <button 
+                        onClick={() => handleAddCaptions(vUrl)}
+                        disabled={captionLoading}
+                        style={{
+                          marginTop: '0.5rem', padding: '0.8rem 1rem', borderRadius: '8px', border: 'none',
+                          background: 'var(--primary)', color: 'white', cursor: 'pointer', width: '100%',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {captionLoading && selectedVideo === vUrl ? "⏳ Transcribing..." : "📝 Add Captions"}
+                      </button>
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {captions && selectedVideo && (
+              <div style={{marginTop: '2rem', padding: '1.5rem', background: 'rgba(0,0,0,0.3)', borderRadius: '12px'}}>
+                <h3>Caption Editor</h3>
+                <p style={{marginBottom: '1rem', color: 'var(--text-muted)'}}>Editing captions for the selected slice. Adjust the text as needed.</p>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '0.8rem', maxHeight: '400px', overflowY: 'auto', paddingRight: '1rem'}}>
+                  {captions.map((seg, idx) => (
+                    <div key={idx} style={{display: 'flex', gap: '1rem', alignItems: 'center'}}>
+                      <span style={{color: 'var(--primary)', minWidth: '90px', fontSize: '0.9rem', fontWeight: 'bold'}}>
+                        {seg.start}s - {seg.end}s
+                      </span>
+                      <input 
+                        type="text" 
+                        className="url-input" 
+                        value={seg.text} 
+                        onChange={(e) => handleCaptionChange(idx, e.target.value)} 
+                        style={{padding: '0.8rem', flex: 1}}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <button 
+                  className="action-btn" 
+                  style={{marginTop: '1.5rem', background: 'linear-gradient(135deg, #10b981, #3b82f6)'}}
+                  onClick={handleBurnCaptions}
+                  disabled={captionLoading}
+                >
+                  {captionLoading ? "⏳ Burning Captions..." : "🔥 Save & Burn Captions"}
+                </button>
               </div>
             )}
           </div>

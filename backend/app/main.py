@@ -4,6 +4,8 @@ from pydantic import BaseModel
 import os
 from fastapi.staticfiles import StaticFiles
 from app.slicer import process_video_async
+from app.transcriber import process_transcription_async
+from app.caption_burner import burn_captions_async
 
 app = FastAPI(title="Video Slicer API")
 
@@ -24,6 +26,13 @@ class SliceRequest(BaseModel):
     duration: str
     sliceCount: int = 1
 
+class TranscribeRequest(BaseModel):
+    video_url: str
+
+class BurnCaptionsRequest(BaseModel):
+    video_url: str
+    captions: list
+
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "Video Slicer Backend is running."}
@@ -37,6 +46,49 @@ async def slice_video(request: SliceRequest):
             "status": "success",
             "message": f"Successfully generated {len(video_urls)} slices!",
             "video_urls": video_urls
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+@app.post("/api/transcribe")
+async def transcribe_video(request: TranscribeRequest):
+    try:
+        # Extract the filename from the end of the URL
+        filename = request.video_url.split("/")[-1]
+        filepath = os.path.join(STATIC_DIR, filename)
+        
+        if not os.path.exists(filepath):
+            return {"status": "error", "message": "File not found on server"}
+            
+        segments = await process_transcription_async(filepath)
+        return {
+            "status": "success",
+            "segments": segments
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+@app.post("/api/burn-captions")
+async def burn_captions(request: BurnCaptionsRequest):
+    try:
+        filename = request.video_url.split("/")[-1]
+        filepath = os.path.join(STATIC_DIR, filename)
+        
+        if not os.path.exists(filepath):
+            return {"status": "error", "message": "Video file not found on server"}
+            
+        new_filename = await burn_captions_async(filepath, request.captions, STATIC_DIR)
+        
+        return {
+            "status": "success",
+            "message": "Captions burned successfully!",
+            "video_url": f"http://localhost:8001/static/{new_filename}"
         }
     except Exception as e:
         return {
