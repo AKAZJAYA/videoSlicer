@@ -3,7 +3,35 @@ import uuid
 import asyncio
 import random
 import time
+import json
 from yt_dlp import YoutubeDL
+
+STATE_FILE = os.path.join(os.path.dirname(__file__), "url_state.json")
+
+def get_last_start_time(url):
+    url = url.split('?')[0]
+    try:
+        with open(STATE_FILE, "r") as f:
+            state = json.load(f)
+            return state.get(url, 0)  # Start at 0 seconds default
+    except (FileNotFoundError, json.JSONDecodeError):
+        return 0
+
+def update_last_start_time(url, start_time):
+    url = url.split('?')[0]
+    try:
+        try:
+            with open(STATE_FILE, "r") as f:
+                state = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            state = {}
+            
+        state[url] = start_time
+        
+        with open(STATE_FILE, "w") as f:
+            json.dump(state, f)
+    except Exception as e:
+        print(f"Error saving state: {e}")
 
 # Semaphore to prevent throttling
 semaphore = asyncio.Semaphore(3)
@@ -34,6 +62,7 @@ async def slice_single_stream(video_url, audio_url, start_time, slice_length, ou
             "-t", str(slice_length),
             "-vf", "crop=ih*9/16:ih",
             "-c:v", "libx264",
+            "-preset", "ultrafast",
             "-c:a", "aac",
             "-strict", "experimental",
             output_filepath
@@ -114,19 +143,17 @@ async def process_video_async(url: str, duration_str: str, slice_count: int, out
     video_duration = info.get('duration', 600)
     
     valid_starts = []
-    attempts = 0
-    max_start = max(11, int(video_duration - slice_length - 10))
+    max_start = max(0, int(video_duration - slice_length))
     
-    while len(valid_starts) < slice_count and attempts < 1000:
-        st = random.randint(10, max_start)
-        overlap = False
-        for v in valid_starts:
-            if abs(st - v) < slice_length + 5:
-                overlap = True
-                break
-        if not overlap:
-            valid_starts.append(st)
-        attempts += 1
+    current_start = get_last_start_time(url)
+    
+    for _ in range(slice_count):
+        if current_start > max_start:
+            current_start = 0 # Loop back to beginning
+        valid_starts.append(current_start)
+        current_start += slice_length
+        
+    update_last_start_time(url, current_start)
         
     # 3. Stream and slice concurrently
     tasks = []
