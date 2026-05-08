@@ -76,15 +76,25 @@ async def burn_captions_async(video_path, captions, caption_style, output_dir):
     # Build dynamic style
     style = build_ass_style(caption_style)
     
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-i", video_path,
-        "-vf", f"subtitles={escaped_srt_path}:force_style='{style}'",
-        "-c:v", "libx264",
-        "-c:a", "copy", # Audio doesn't need to be re-encoded
-        output_filepath
-    ]
+    if not captions:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i", video_path,
+            "-c:v", "copy",
+            "-c:a", "copy",
+            output_filepath
+        ]
+    else:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i", video_path,
+            "-vf", f"subtitles={escaped_srt_path}:force_style='{style}'",
+            "-c:v", "libx264",
+            "-c:a", "copy", # Audio doesn't need to be re-encoded
+            output_filepath
+        ]
     
     process = await asyncio.create_subprocess_exec(
         *cmd,

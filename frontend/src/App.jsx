@@ -125,6 +125,15 @@ function App() {
     setCaptions(newCaptions);
   }
 
+  const handleRemoveCaptionSegment = (index) => {
+    const newCaptions = captions.filter((_, i) => i !== index);
+    setCaptions(newCaptions);
+  }
+
+  const handleClearAllCaptions = () => {
+    setCaptions([]);
+  }
+
   const handleStyleChange = (key, value) => {
     setCaptionStyle(prev => ({ ...prev, [key]: value }));
   }
@@ -373,8 +382,21 @@ function App() {
                         onChange={(e) => handleCaptionChange(idx, e.target.value)} 
                         style={{padding: '0.8rem', flex: 1}}
                       />
+                      <button
+                        onClick={() => handleRemoveCaptionSegment(idx)}
+                        style={{
+                          padding: '0.8rem', borderRadius: '8px', border: '1px solid rgba(236,72,153,0.3)',
+                          background: 'rgba(236,72,153,0.1)', color: 'var(--secondary)', cursor: 'pointer',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        ✕
+                      </button>
                     </div>
                   ))}
+                  {captions.length === 0 && (
+                    <p style={{textAlign: 'center', color: 'var(--text-muted)', padding: '2rem'}}>No captions. Click "Save & Burn" to remove captions from the video.</p>
+                  )}
                 </div>
                 <div style={{marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)'}}>
                   <h4 style={{marginBottom: '1rem', color: 'var(--primary)'}}>🎨 Caption Styling</h4>
@@ -450,14 +472,24 @@ function App() {
                   </div>
                 </div>
 
-                <button 
-                  className="action-btn" 
-                  style={{marginTop: '1.5rem', background: 'linear-gradient(135deg, #10b981, #3b82f6)'}}
-                  onClick={handleBurnCaptions}
-                  disabled={captionLoading}
-                >
-                  {captionLoading ? "⏳ Burning Captions..." : "🔥 Save & Burn Captions"}
-                </button>
+                <div style={{display: 'flex', gap: '1rem', marginTop: '1.5rem'}}>
+                  <button
+                    className="action-btn"
+                    style={{flex: 1, background: 'linear-gradient(135deg, #10b981, #3b82f6)'}}
+                    onClick={handleBurnCaptions}
+                    disabled={captionLoading}
+                  >
+                    {captionLoading ? "⏳ Burning Captions..." : "🔥 Save & Burn Captions"}
+                  </button>
+                  <button
+                    className="action-btn"
+                    style={{flex: 1, background: 'transparent', border: '1px solid var(--secondary)', color: 'var(--secondary)'}}
+                    onClick={handleClearAllCaptions}
+                    disabled={captionLoading || captions.length === 0}
+                  >
+                    🗑️ Clear All Captions
+                  </button>
+                </div>
               </div>
             )}
               </div>
