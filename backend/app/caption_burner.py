@@ -45,18 +45,20 @@ def hex_to_ass_color(hex_str):
 
 def build_ass_style(style_dict):
     if not style_dict:
-        return "Alignment=2,OutlineColour=&H100000000,BorderStyle=1,Outline=2,Shadow=0,Fontsize=22,PrimaryColour=&H00FFFFFF,Bold=-1,MarginV=60"
+        return "Alignment=2,OutlineColour=&H00000000,BackColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,Fontsize=22,PrimaryColour=&H00FFFFFF,Bold=-1,MarginV=60"
         
     font_size = style_dict.get('fontSize', 24)
     color = hex_to_ass_color(style_dict.get('color', '#FFFFFF'))
     outline = style_dict.get('outline', 2)
+    outline_color = hex_to_ass_color(style_dict.get('outlineColor', '#000000'))
     shadow = style_dict.get('shadow', 0)
+    shadow_color = hex_to_ass_color(style_dict.get('shadowColor', '#000000'))
     position = style_dict.get('position', 'bottom')
     
     alignment = 2 if position == 'bottom' else 5 # 5 is center center
     margin_v = 60 if position == 'bottom' else 0
     
-    return f"Alignment={alignment},OutlineColour=&H100000000,BorderStyle=1,Outline={outline},Shadow={shadow},Fontsize={font_size},PrimaryColour={color},Bold=-1,MarginV={margin_v}"
+    return f"Alignment={alignment},OutlineColour={outline_color},BackColour={shadow_color},BorderStyle=1,Outline={outline},Shadow={shadow},Fontsize={font_size},PrimaryColour={color},Bold=-1,MarginV={margin_v}"
 
 async def burn_captions_async(video_path, captions, caption_style, output_dir):
     temp_id = str(uuid.uuid4())
