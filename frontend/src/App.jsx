@@ -304,11 +304,12 @@ function App() {
                     <p style={{textAlign: 'center', color: 'var(--text-muted)', padding: '2rem'}}>No captions. Click "Save & Burn" to remove captions from the video.</p>
                   )}
                 </div>
-                <div style={{marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)'}}>
-                  <h4 style={{marginBottom: '1rem', color: 'var(--primary)'}}>🎨 Caption Styling</h4>
-                  <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
-                    <div className="input-group" style={{flex: 1, minWidth: '150px'}}>
-                      <label style={{fontSize: '0.85rem'}}>Font Size</label>
+                <div style={{display: 'flex', gap: '2rem', marginTop: '2rem'}}>
+                  <div style={{flex: 2, padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)'}}>
+                    <h4 style={{marginBottom: '1rem', color: 'var(--primary)'}}>🎨 Caption Styling</h4>
+                    <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
+                      <div className="input-group" style={{flex: 1, minWidth: '150px'}}>
+                        <label style={{fontSize: '0.85rem'}}>Font Size</label>
                       <input 
                         type="number" 
                         className="url-input" 
@@ -380,17 +381,31 @@ function App() {
                         <option value="center">Middle Center</option>
                       </select>
                     </div>
-                    <div className="input-group" style={{flex: 1, minWidth: '150px'}}>
-                      <label style={{fontSize: '0.85rem'}}>Animation Style</label>
+                    </div>
+                  </div>
+                  <div style={{flex: 1, padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)'}}>
+                    <h4 style={{marginBottom: '1rem', color: 'var(--secondary)'}}>🎬 Animation Effects</h4>
+                    <div className="input-group" style={{marginBottom: 0}}>
+                      <label style={{fontSize: '0.85rem', color: 'var(--text-muted)'}}>Choose modern caption style</label>
                       <select
                         className="url-input"
                         value={captionStyle.animationStyle}
                         onChange={(e) => handleStyleChange('animationStyle', e.target.value)}
-                        style={{padding: '0.5rem'}}
+                        style={{padding: '0.8rem', marginTop: '0.5rem'}}
                       >
-                        <option value="sentence">Sentence</option>
+                        <option value="sentence">None (Sentence)</option>
                         <option value="word">Word by Word</option>
                         <option value="cumulative">Cumulative</option>
+                        <option value="typewriter">Typewriter</option>
+                        <option value="karaoke">Karaoke (Highlight)</option>
+                        <option value="fade">Fade In</option>
+                        <option value="popup">Pop Up</option>
+                        <option value="bounce">Bounce</option>
+                        <option value="glitch">Glitch</option>
+                        <option value="neon">Neon Glow</option>
+                        <option value="zoom">Zoom</option>
+                        <option value="slide">Slide Up</option>
+                        <option value="kinetic">Kinetic Pop</option>
                       </select>
                     </div>
                   </div>
