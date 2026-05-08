@@ -10,12 +10,14 @@ function App() {
   const [captions, setCaptions] = useState(null)
   const [captionLoading, setCaptionLoading] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState(null)
+  const [activeTab, setActiveTab] = useState('slicer')
   const [captionStyle, setCaptionStyle] = useState({
     fontSize: 24,
     color: '#ffffff',
     outline: 2,
     shadow: 0,
-    position: 'bottom'
+    position: 'bottom',
+    animationStyle: 'sentence'
   });
 
   const durations = [
@@ -132,14 +134,41 @@ function App() {
       <div className="bg-gradient"></div>
       <div className="bg-gradient-2"></div>
       
-      <div className="app-container">
-        <header>
-          <h1 className="logo">EasySlice AI</h1>
-          <p>Transform long videos into viral, caption-ready shorts in seconds.</p>
-        </header>
+      <div className="dashboard-layout">
+        <aside className="sidebar">
+          <header>
+            <h1 className="logo" style={{fontSize: '2rem'}}>EasySlice AI</h1>
+            <p style={{fontSize: '0.9rem'}}>Transform long videos into viral shorts.</p>
+          </header>
 
-        <main>
-          <div className="slicer-panel">
+          <nav className="sidebar-nav">
+            <button
+              className={`nav-item ${activeTab === 'slicer' ? 'active' : ''}`}
+              onClick={() => setActiveTab('slicer')}
+            >
+              ✂️ Video Slicer
+            </button>
+            <button
+              className={`nav-item ${activeTab === 'video-gen' ? 'active' : ''}`}
+              onClick={() => setActiveTab('video-gen')}
+              disabled
+            >
+              🎥 AI Video Generator (Soon)
+            </button>
+            <button
+              className={`nav-item ${activeTab === 'image-gen' ? 'active' : ''}`}
+              onClick={() => setActiveTab('image-gen')}
+              disabled
+            >
+              🖼️ AI Image Generator (Soon)
+            </button>
+          </nav>
+        </aside>
+
+        <main className="main-content">
+          <div className="app-container">
+            {activeTab === 'slicer' && (
+              <div className="slicer-panel">
             <div className="input-group">
               <label htmlFor="yt-url">YouTube Video URL</label>
               <input 
@@ -309,6 +338,19 @@ function App() {
                         <option value="center">Middle Center</option>
                       </select>
                     </div>
+                    <div className="input-group" style={{flex: 1, minWidth: '150px'}}>
+                      <label style={{fontSize: '0.85rem'}}>Animation Style</label>
+                      <select
+                        className="url-input"
+                        value={captionStyle.animationStyle}
+                        onChange={(e) => handleStyleChange('animationStyle', e.target.value)}
+                        style={{padding: '0.5rem'}}
+                      >
+                        <option value="sentence">Sentence</option>
+                        <option value="word">Word by Word</option>
+                        <option value="cumulative">Cumulative</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -320,6 +362,8 @@ function App() {
                 >
                   {captionLoading ? "⏳ Burning Captions..." : "🔥 Save & Burn Captions"}
                 </button>
+              </div>
+            )}
               </div>
             )}
           </div>

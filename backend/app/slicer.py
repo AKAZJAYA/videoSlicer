@@ -59,6 +59,7 @@ async def slice_single_stream(video_url, audio_url, start_time, slice_length, ou
             ])
             
         cmd.extend([
+            "-threads", "4",
             "-t", str(slice_length),
             "-vf", "crop=ih*9/16:ih",
             "-c:v", "libx264",
@@ -83,9 +84,9 @@ async def slice_single_stream(video_url, audio_url, start_time, slice_length, ou
         return output_filename
 
 def get_video_stream(url):
-    # Ask for up to 1080p video, and separate high-quality audio
+    # Ask for up to 720p video, and separate high-quality audio
     ydl_opts = {
-        'format': 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'format': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'quiet': True,
         'no_warnings': True,
     }

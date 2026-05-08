@@ -9,13 +9,32 @@ def format_srt_time(seconds):
     millis = int((seconds - int(seconds)) * 1000)
     return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
 
-def generate_srt(captions, output_filepath):
+def generate_srt(captions, output_filepath, animation_style="sentence"):
     with open(output_filepath, "w", encoding="utf-8") as f:
-        for i, cap in enumerate(captions):
-            start = format_srt_time(float(cap["start"]))
-            end = format_srt_time(float(cap["end"]))
-            text = cap["text"]
-            f.write(f"{i+1}\n{start} --> {end}\n{text}\n\n")
+        idx = 1
+        for cap in captions:
+            if animation_style == "word" and "words" in cap and cap["words"]:
+                for w in cap["words"]:
+                    start = format_srt_time(float(w["start"]))
+                    end = format_srt_time(float(w["end"]))
+                    text = w["word"]
+                    f.write(f"{idx}\n{start} --> {end}\n{text}\n\n")
+                    idx += 1
+            elif animation_style == "cumulative" and "words" in cap and cap["words"]:
+                cum_text = ""
+                words = cap["words"]
+                for j, w in enumerate(words):
+                    start = format_srt_time(float(w["start"]))
+                    end = format_srt_time(float(w["end"])) if j == len(words) - 1 else format_srt_time(float(words[j+1]["start"]))
+                    cum_text += w["word"] + " "
+                    f.write(f"{idx}\n{start} --> {end}\n{cum_text.strip()}\n\n")
+                    idx += 1
+            else:
+                start = format_srt_time(float(cap["start"]))
+                end = format_srt_time(float(cap["end"]))
+                text = cap["text"]
+                f.write(f"{idx}\n{start} --> {end}\n{text}\n\n")
+                idx += 1
 
 def hex_to_ass_color(hex_str):
     hex_str = hex_str.lstrip('#')
@@ -48,7 +67,8 @@ async def burn_captions_async(video_path, captions, caption_style, output_dir):
     output_filepath = os.path.join(output_dir, output_filename)
     
     # 1. Generate SRT file
-    generate_srt(captions, srt_filepath)
+    animation_style = caption_style.get("animationStyle", "sentence") if caption_style else "sentence"
+    generate_srt(captions, srt_filepath, animation_style)
     
     # We must escape the path for ffmpeg filter
     escaped_srt_path = srt_filepath.replace("\\", "/").replace(":", "\\:")
