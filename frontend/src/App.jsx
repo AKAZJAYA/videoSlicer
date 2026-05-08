@@ -11,6 +11,12 @@ function App() {
   const [captionLoading, setCaptionLoading] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [activeTab, setActiveTab] = useState('slicer')
+  const [imagePrompt, setImagePrompt] = useState('')
+  const [imageAspectRatio, setImageAspectRatio] = useState('1:1')
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const [generatedImage, setGeneratedImage] = useState(null)
+  const [imageError, setImageError] = useState(null)
+
   const [captionStyle, setCaptionStyle] = useState({
     fontSize: 24,
     color: '#ffffff',
@@ -42,7 +48,8 @@ function App() {
     setVideoUrls([])
     
     try {
-      const response = await fetch("http://localhost:8001/api/slice", {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8001";
+      const response = await fetch(`${apiUrl}/api/slice`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -69,7 +76,8 @@ function App() {
     setStatus("Transcribing video... This takes a few seconds.");
 
     try {
-      const response = await fetch("http://localhost:8001/api/transcribe", {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8001";
+      const response = await fetch(`${apiUrl}/api/transcribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ video_url: vUrl })
@@ -99,12 +107,70 @@ function App() {
     setCaptions(newCaptions);
   }
 
-  const handleClearAllCaptions = () => {
+  const handleClearAllCaptions = async () => {
     setCaptions([]);
+    if (!selectedVideo) return;
+
+    setCaptionLoading(true);
+    setStatus("Removing captions from video... This might take a few moments.");
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8001";
+      const response = await fetch(`${apiUrl}/api/burn-captions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ video_url: selectedVideo, captions: [], caption_style: captionStyle })
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        setStatus("Captions removed successfully!");
+
+        // Replace the old video with the new one
+        const updatedUrls = videoUrls.map(url => url === selectedVideo ? data.video_url : url);
+        setVideoUrls(updatedUrls);
+
+        // Select the new video and clear captions editor
+        setSelectedVideo(data.video_url);
+        setCaptions(null); // Close the editor completely after removing all
+      } else {
+        setStatus("Error: " + data.message);
+      }
+    } catch (err) {
+      setStatus("Error connecting to backend to remove captions.");
+    } finally {
+      setCaptionLoading(false);
+    }
   }
 
   const handleStyleChange = (key, value) => {
     setCaptionStyle(prev => ({ ...prev, [key]: value }));
+  }
+
+  const handleGenerateImage = async () => {
+    if (!imagePrompt.trim()) return;
+
+    setIsGeneratingImage(true);
+    setImageError(null);
+    setGeneratedImage(null);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8001";
+      const response = await fetch(`${apiUrl}/api/generate-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: imagePrompt, aspect_ratio: imageAspectRatio })
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        setGeneratedImage(data.image_url);
+      } else {
+        setImageError(data.message);
+      }
+    } catch (err) {
+      setImageError("Failed to connect to image generation service.");
+    } finally {
+      setIsGeneratingImage(false);
+    }
   }
 
   const handleBurnCaptions = async () => {
@@ -114,7 +180,8 @@ function App() {
     setStatus("Burning captions into video... This might take a few moments.");
 
     try {
-      const response = await fetch("http://localhost:8001/api/burn-captions", {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8001";
+      const response = await fetch(`${apiUrl}/api/burn-captions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ video_url: selectedVideo, captions, caption_style: captionStyle })
@@ -169,9 +236,8 @@ function App() {
             <button
               className={`nav-item ${activeTab === 'image-gen' ? 'active' : ''}`}
               onClick={() => setActiveTab('image-gen')}
-              disabled
             >
-              🖼️ AI Image Generator (Soon)
+              🖼️ AI Image Generator
             </button>
           </nav>
         </aside>
@@ -424,13 +490,108 @@ function App() {
                     className="action-btn"
                     style={{flex: 1, background: 'transparent', border: '1px solid var(--secondary)', color: 'var(--secondary)'}}
                     onClick={handleClearAllCaptions}
-                    disabled={captionLoading || captions.length === 0}
+                    disabled={captionLoading}
                   >
-                    🗑️ Clear All Captions
+                    🗑️ Remove All Captions From Video
                   </button>
                 </div>
               </div>
             )}
+              </div>
+            )}
+
+            {activeTab === 'image-gen' && (
+              <div className="slicer-panel">
+                <h2 style={{marginBottom: '2rem'}}>AI Image Generator</h2>
+
+                <div className="input-group">
+                  <label htmlFor="img-prompt">Describe your image in detail</label>
+                  <textarea
+                    id="img-prompt"
+                    className="url-input"
+                    placeholder="A futuristic cyber city bathed in neon lights..."
+                    value={imagePrompt}
+                    onChange={(e) => setImagePrompt(e.target.value)}
+                    disabled={isGeneratingImage}
+                    rows={4}
+                    style={{resize: 'vertical'}}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>Aspect Ratio</label>
+                  <div className="duration-selector">
+                    {['1:1', '16:9', '9:16', '4:5', '3:2'].map((ratio) => (
+                      <button
+                        key={ratio}
+                        className={`duration-btn ${imageAspectRatio === ratio ? 'active' : ''}`}
+                        onClick={() => setImageAspectRatio(ratio)}
+                        disabled={isGeneratingImage}
+                      >
+                        {ratio}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  className="action-btn"
+                  onClick={handleGenerateImage}
+                  disabled={isGeneratingImage || !imagePrompt.trim()}
+                >
+                  {isGeneratingImage ? "🎨 Painting pixels..." : "✨ Generate Masterpiece"}
+                </button>
+
+                {imageError && (
+                  <div className="status-box" style={{borderColor: 'var(--secondary)', color: 'var(--secondary)', background: 'rgba(236,72,153,0.1)'}}>
+                    {imageError}
+                  </div>
+                )}
+
+                {generatedImage && (
+                  <div style={{marginTop: '3rem'}}>
+                    <h3 style={{textAlign: 'center', marginBottom: '1.5rem'}}>Your AI Creation</h3>
+                    <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '2rem', borderRadius: '12px'}}>
+                      <img
+                        src={generatedImage}
+                        alt="Generated AI art"
+                        style={{maxWidth: '100%', maxHeight: '600px', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)'}}
+                      />
+                      <div style={{display: 'flex', gap: '1rem', marginTop: '2rem', width: '100%', justifyContent: 'center'}}>
+                        <button
+                          className="action-btn"
+                          style={{flex: 0, padding: '0.8rem 2rem', minWidth: '150px'}}
+                          onClick={handleGenerateImage}
+                          disabled={isGeneratingImage}
+                        >
+                          🔄 Regenerate
+                        </button>
+                        <button
+                          className="action-btn"
+                          style={{flex: 0, padding: '0.8rem 2rem', background: 'transparent', border: '1px solid var(--primary)', color: 'var(--text-main)', minWidth: '150px'}}
+                          onClick={() => {
+                            const a = document.createElement('a');
+                            a.href = generatedImage;
+                            a.download = 'ai-generated-art.jpg';
+                            a.click();
+                          }}
+                        >
+                          ⬇️ Download
+                        </button>
+                        <button
+                          className="action-btn"
+                          style={{flex: 0, padding: '0.8rem 2rem', background: 'transparent', border: '1px solid var(--text-muted)', color: 'var(--text-main)', minWidth: '150px'}}
+                          onClick={() => {
+                            navigator.clipboard.writeText(imagePrompt);
+                            alert("Prompt copied to clipboard!");
+                          }}
+                        >
+                          📋 Copy Prompt
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

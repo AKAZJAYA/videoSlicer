@@ -7,8 +7,10 @@ from fastapi.staticfiles import StaticFiles
 from app.slicer import process_video_async
 from app.transcriber import process_transcription_async
 from app.caption_burner import burn_captions_async
+from app.routes.image_routes import router as image_router
 
 app = FastAPI(title="Video Slicer API")
+app.include_router(image_router)
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
