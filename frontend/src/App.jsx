@@ -15,7 +15,9 @@ function App() {
     fontSize: 24,
     color: '#ffffff',
     outline: 2,
+    outlineColor: '#000000',
     shadow: 0,
+    shadowColor: '#000000',
     position: 'bottom',
     animationStyle: 'sentence'
   });
@@ -424,25 +426,43 @@ function App() {
                     </div>
                     <div className="input-group" style={{flex: 1, minWidth: '150px'}}>
                       <label style={{fontSize: '0.85rem'}}>Outline Thickness</label>
-                      <input 
-                        type="number" 
-                        className="url-input" 
-                        value={captionStyle.outline} 
-                        onChange={(e) => handleStyleChange('outline', parseInt(e.target.value))} 
-                        min="0" max="10"
-                        style={{padding: '0.5rem'}}
-                      />
+                      <div style={{display: 'flex', gap: '0.5rem'}}>
+                        <input
+                          type="number"
+                          className="url-input"
+                          value={captionStyle.outline}
+                          onChange={(e) => handleStyleChange('outline', parseInt(e.target.value))}
+                          min="0" max="10"
+                          style={{padding: '0.5rem', flex: 1}}
+                        />
+                        <input
+                          type="color"
+                          className="url-input"
+                          value={captionStyle.outlineColor}
+                          onChange={(e) => handleStyleChange('outlineColor', e.target.value)}
+                          style={{height: '42px', padding: '0 5px', width: '50px'}}
+                        />
+                      </div>
                     </div>
                     <div className="input-group" style={{flex: 1, minWidth: '150px'}}>
                       <label style={{fontSize: '0.85rem'}}>Shadow Depth</label>
-                      <input 
-                        type="number" 
-                        className="url-input" 
-                        value={captionStyle.shadow} 
-                        onChange={(e) => handleStyleChange('shadow', parseInt(e.target.value))} 
-                        min="0" max="10"
-                        style={{padding: '0.5rem'}}
-                      />
+                      <div style={{display: 'flex', gap: '0.5rem'}}>
+                        <input
+                          type="number"
+                          className="url-input"
+                          value={captionStyle.shadow}
+                          onChange={(e) => handleStyleChange('shadow', parseInt(e.target.value))}
+                          min="0" max="10"
+                          style={{padding: '0.5rem', flex: 1}}
+                        />
+                        <input
+                          type="color"
+                          className="url-input"
+                          value={captionStyle.shadowColor}
+                          onChange={(e) => handleStyleChange('shadowColor', e.target.value)}
+                          style={{height: '42px', padding: '0 5px', width: '50px'}}
+                        />
+                      </div>
                     </div>
                     <div className="input-group" style={{flex: 1, minWidth: '150px'}}>
                       <label style={{fontSize: '0.85rem'}}>Position</label>
