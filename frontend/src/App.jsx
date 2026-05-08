@@ -18,6 +18,39 @@ function App() {
     position: 'bottom'
   });
 
+  const [movieQuery, setMovieQuery] = useState('')
+  const [movieResults, setMovieResults] = useState([])
+  const [searching, setSearching] = useState(false)
+  const [tmdbError, setTmdbError] = useState(null)
+  
+  const TMDB_API_KEY = "221c63a422cdce06a4392ca85306cdff";
+
+  const searchMovie = async () => {
+    if (!movieQuery) return;
+    setSearching(true);
+    setTmdbError(null);
+    try {
+      const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(movieQuery)}`);
+      const data = await response.json();
+      if (data.results) {
+        setMovieResults(data.results.slice(0, 5));
+      } else {
+        setMovieResults([]);
+      }
+    } catch (err) {
+      setTmdbError("Failed to search movies.");
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  const selectMovie = (movie) => {
+    // Set the TMDB URL directly into the input bar
+    setUrl(`https://www.themoviedb.org/movie/${movie.id}`);
+    setMovieResults([]);
+    setMovieQuery('');
+  }
+
   const durations = [
     { label: '15-30s', value: '15-30s' },
     { label: '30-45s', value: '30-45s' },
@@ -38,7 +71,7 @@ function App() {
     setVideoUrls([])
     
     try {
-      const response = await fetch("http://localhost:8001/api/slice", {
+      const response = await fetch("http://localhost:8000/api/slice", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -65,7 +98,7 @@ function App() {
     setStatus("Transcribing video... This takes a few seconds.");
 
     try {
-      const response = await fetch("http://localhost:8001/api/transcribe", {
+      const response = await fetch("http://localhost:8000/api/transcribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ video_url: vUrl })
@@ -101,7 +134,7 @@ function App() {
     setStatus("Burning captions into video... This might take a few moments.");
 
     try {
-      const response = await fetch("http://localhost:8001/api/burn-captions", {
+      const response = await fetch("http://localhost:8000/api/burn-captions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ video_url: selectedVideo, captions, caption_style: captionStyle })
@@ -140,6 +173,69 @@ function App() {
 
         <main>
           <div className="slicer-panel">
+            <div className="input-group">
+              <label htmlFor="movie-search">Search TMDB Movie</label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input 
+                  id="movie-search"
+                  type="text" 
+                  className="url-input" 
+                  placeholder="E.g., Inception" 
+                  value={movieQuery}
+                  onChange={(e) => setMovieQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && searchMovie()}
+                  disabled={loading || searching}
+                />
+                <button 
+                  onClick={searchMovie} 
+                  disabled={loading || searching}
+                  style={{
+                    padding: '0 1rem', borderRadius: '8px', border: 'none',
+                    background: 'var(--primary)', color: 'white', cursor: 'pointer',
+                    fontWeight: 'bold', whiteSpace: 'nowrap'
+                  }}
+                >
+                  {searching ? "..." : "Search"}
+                </button>
+              </div>
+              {tmdbError && <div style={{ color: '#ef4444', fontSize: '0.9rem', marginTop: '0.5rem' }}>{tmdbError}</div>}
+              {movieResults.length > 0 && (
+                <div style={{ marginTop: '0.5rem', background: 'rgba(0,0,0,0.4)', borderRadius: '8px', overflow: 'hidden' }}>
+                  {movieResults.map(movie => (
+                    <div 
+                      key={movie.id} 
+                      onClick={() => selectMovie(movie)}
+                      style={{ 
+                        padding: '0.8rem 1rem', 
+                        cursor: 'pointer', 
+                        borderBottom: '1px solid rgba(255,255,255,0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {movie.poster_path && (
+                        <img 
+                          src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`} 
+                          alt={movie.title} 
+                          style={{ width: '40px', height: '60px', objectFit: 'cover', borderRadius: '4px' }}
+                        />
+                      )}
+                      <div>
+                        <div style={{ fontWeight: 'bold' }}>{movie.title}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{movie.release_date?.substring(0,4)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', margin: '1rem 0' }}>— OR —</div>
+
             <div className="input-group">
               <label htmlFor="yt-url">YouTube Video URL</label>
               <input 

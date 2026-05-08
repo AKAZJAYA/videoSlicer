@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict
 import os
 from fastapi.staticfiles import StaticFiles
+from yt_dlp import YoutubeDL
 from app.slicer import process_video_async
 from app.transcriber import process_transcription_async
 from app.caption_burner import burn_captions_async
@@ -43,7 +44,7 @@ def read_root():
 async def slice_video(request: SliceRequest):
     try:
         filenames = await process_video_async(request.url, request.duration, request.sliceCount, STATIC_DIR)
-        video_urls = [f"http://localhost:8001/static/{f}" for f in filenames]
+        video_urls = [f"http://localhost:8000/static/{f}" for f in filenames]
         return {
             "status": "success",
             "message": f"Successfully generated {len(video_urls)} slices!",
@@ -90,7 +91,7 @@ async def burn_captions(request: BurnCaptionsRequest):
         return {
             "status": "success",
             "message": "Captions burned successfully!",
-            "video_url": f"http://localhost:8001/static/{new_filename}"
+            "video_url": f"http://localhost:8000/static/{new_filename}"
         }
     except Exception as e:
         return {
